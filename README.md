@@ -37,6 +37,14 @@ https://github.com/rduvql/vscode-jumper
 
 ## Release Notes
 
+### 1.0.1
+
+fix error that prevented going to the first line
+
 ### 1.0.0
 
 Initial release of jumper
+
+## Contributors
+
+[@md2perpe](https://github.com/md2perpe)
