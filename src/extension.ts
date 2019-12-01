@@ -33,7 +33,7 @@ function getNextOrPreviousLine(isNext: boolean): vscode.TextLine | undefined
         // dynamic for-loop that change direction base on 'isNext':
         // isNext === true => loop forward else loop backward
         // kind of ugly but nice at the same time
-        for (let i = (isNext ? currLine + 1 : currLine - 1); isNext ? i < editor.document.lineCount : i > 0; isNext ? i++ : i--)
+        for (let i = (isNext ? currLine + 1 : currLine - 1); isNext ? i < editor.document.lineCount : i >= 0; isNext ? i++ : i--)
         {
             let line = editor.document.lineAt(i);
 
