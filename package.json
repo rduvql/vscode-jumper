@@ -2,7 +2,7 @@
 	"name": "vsode-jumper",
 	"displayName": "jumper",
 	"description": "jumper extension for vscode",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "icon": "images/icon.png",
     "publisher": "rduvql",
