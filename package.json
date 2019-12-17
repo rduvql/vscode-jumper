@@ -1,23 +1,25 @@
 {
-	"name": "vsode-jumper",
-	"displayName": "jumper",
-	"description": "jumper extension for vscode",
-    "version": "1.0.1",
+    "name": "vscode-jumper",
+    "displayName": "jumper",
+    "description": "jumper extension for vscode",
+    "version": "1.1.0",
     "license": "MIT",
     "icon": "images/icon.png",
     "publisher": "rduvql",
     "author": {
         "name": "rduvql"
     },
-	"engines": {
-		"vscode": "^1.40.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"onCommand:ext.jumper.next",
-		"onCommand:ext.jumper.previous"
+    "engines": {
+        "vscode": "^1.40.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onCommand:ext.jumper.focusPrevious",
+        "onCommand:ext.jumper.focusNext",
+        "onCommand:ext.jumper.focusPreviousError",
+        "onCommand:ext.jumper.focusNextError"
     ],
     "keywords": [
         "jump",
@@ -31,31 +33,42 @@
         "url": "https://github.com/rduvql/vscode-jumper/issues"
     },
     "homepage": "https://github.com/rduvql/vscode-jumper/blob/master/README.md",
-	"main": "./out/extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "ext.jumper.next",
-				"title": "next focus"
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "ext.jumper.focusPrevious",
+                "title": "jumper: focus previous"
             },
             {
-                "command": "ext.jumper.previous",
-                "title": "previous focus"
+                "command": "ext.jumper.focusNext",
+                "title": "jumper: focus next"
+            },
+            {
+                "command": "ext.jumper.focusPreviousError",
+                "title": "jumper: focus previous error"
+            },
+            {
+                "command": "ext.jumper.focusNextError",
+                "title": "jumper: focus next error"
             }
-		]
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "npm run compile && node ./node_modules/vscode/bin/test"
-	},
-	"devDependencies": {
-		"typescript": "^3.1.4",
-		"vscode": "^1.1.25",
-		"tslint": "^5.8.0",
-		"@types/node": "^8.10.25",
-		"@types/mocha": "^2.2.42"
-	}
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "watch": "webpack --mode development",
+        "compile": "webpack --mode production",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+        "@types/mocha": "^2.2.42",
+        "@types/node": "^8.10.25",
+        "ts-loader": "^6.2.1",
+        "tslint": "^5.8.0",
+        "typescript": "^3.1.4",
+        "vscode": "^1.1.25",
+        "webpack": "^4.41.2",
+        "webpack-cli": "^3.3.10"
+    }
 }
