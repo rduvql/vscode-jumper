@@ -13,7 +13,6 @@ export function activate( context: vscode.ExtensionContext )
     // let previousVersion = context.workspaceState.get<number>( STATE_PREVIOUS_VERSION_NUM );
 
 
-
     context.workspaceState.update( STATE_PREVIOUS_VERSION_NUM, currentVersion );
 }
 

@@ -56,16 +56,19 @@
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
+        "watch": "webpack --mode development",
+        "compile": "webpack --mode production",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
+        "@types/mocha": "^2.2.42",
+        "@types/node": "^8.10.25",
+        "ts-loader": "^6.2.1",
+        "tslint": "^5.8.0",
         "typescript": "^3.1.4",
         "vscode": "^1.1.25",
-        "tslint": "^5.8.0",
-        "@types/node": "^8.10.25",
-        "@types/mocha": "^2.2.42"
+        "webpack": "^4.41.2",
+        "webpack-cli": "^3.3.10"
     }
 }
