@@ -2,7 +2,9 @@
 
 ## Feature Overview
 
-jumper provide fast cursor movement to non-empty lines of code
+Jumper provides fast cursor movement to non-empty lines of code
+
+It also gives the ability to move the cursor direcly to errors in document
 
 ![alt](https://raw.githubusercontent.com/rduvql/vscode-jumper/master/images/demo.gif)
 
@@ -10,21 +12,33 @@ jumper provide fast cursor movement to non-empty lines of code
 
 This extension contributes the following commands:
 
-* `ext.jumper.next`: jump to the next non-empty line (below) cursor
-* `ext.jumper.previous`: jup to the previous non-empty line (above) cursor
+* `ext.jumper.focusPrevious`: jup to the previous (above cursor) non-empty line
+* `ext.jumper.focusNext`: jump to the next (below cursor) non-empty line
+* `ext.jumper.focusPreviousError`: jump to the previous (above cursor) error in current document
+* `ext.jumper.focusNextError`: jump to the next (below cursor) error in current document
 
 Configuration example (Keyboard Shortcuts):
 ```json
     {
         "key": "ctrl+up",
-        "command": "ext.jumper.previous",
+        "command": "ext.jumper.focusPrevious",
         "when": "editorTextFocus"
     },
     {
         "key": "ctrl+down",
-        "command": "ext.jumper.next",
+        "command": "ext.jumper.focusNext",
         "when": "editorTextFocus"
     },
+    {
+        "key": "ctrl+shift+up",
+        "command": "ext.jumper.focusPreviousError",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+shift+down",
+        "command": "ext.jumper.focusNextError",
+        "when": "editorTextFocus"
+    }
 ```
 
 ## Known Issues
@@ -36,6 +50,13 @@ Does not work with html, xml or any markup language
 https://github.com/rduvql/vscode-jumper
 
 ## Release Notes
+
+### 1.1.0
+
+New feature: can now focus next / previous error in current document
+
+- jumper: focus previous error : ext.jumper.focusPreviousError
+- jumper: focus next error : ext.jumper.focusNextError
 
 ### 1.0.1
 
