@@ -51,6 +51,10 @@ https://github.com/rduvql/vscode-jumper
 
 ## Release Notes
 
+### 1.1.1
+
+fix focusPreviousEror / focusNextEror when document index !== 0
+
 ### 1.1.0
 
 New feature: can now focus next / previous error in current document
