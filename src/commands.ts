@@ -88,7 +88,7 @@ function getNextOrPreviousError( dir: direction ) : vscode.Range | undefined
     let editor = vscode.window.activeTextEditor;
 
     let errorRanges: vscode.Range[] = vscode.languages.getDiagnostics()
-        .filter( uriDiag => editor && uriDiag[0].path && editor.document.uri.path )[0][1]
+        .filter( uriDiag => editor && uriDiag[0].path === editor.document.uri.path )[0][1]
         // [0] => get first of array => current file
         // [1] => get diagnostics ([0] is uri)
         .map( diag => diag.range );
