@@ -4,9 +4,11 @@
 
 Jumper provides fast cursor movement to non-empty lines of code
 
+![alt](https://raw.githubusercontent.com/rduvql/vscode-jumper/master/images/demo_focus.gif)
+
 It also gives the ability to move the cursor direcly to errors in document
 
-![alt](https://raw.githubusercontent.com/rduvql/vscode-jumper/master/images/demo.gif)
+![alt](https://raw.githubusercontent.com/rduvql/vscode-jumper/master/images/demo_focus_error.gif)
 
 ## Commands
 
@@ -50,6 +52,10 @@ Does not work with html, xml or any markup language
 https://github.com/rduvql/vscode-jumper
 
 ## Release Notes
+
+### 1.1.1
+
+fix focusPreviousEror / focusNextEror when document index !== 0
 
 ### 1.1.0
 
