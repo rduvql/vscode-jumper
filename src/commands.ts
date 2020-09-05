@@ -6,25 +6,15 @@ export const jumperCommands = ( () =>
 {
     let context: vscode.ExtensionContext;
 
-    function registerDisposableCommand( command: string, callback: ( ...args: any[] ) => any, thisArg?: any )
-    {
-        let disposable = vscode.commands.registerCommand( command, callback, thisArg );
-        context.subscriptions.push( disposable );
-    }
-
     function registerCommands( ctx: vscode.ExtensionContext )
     {
         context = ctx;
 
-        registerDisposableCommand( "ext.jumper.previous", () =>
+        const registerDisposableCommand = ( command: string, callback: ( ...args: any[] ) => any, thisArg?: any ) =>
         {
-            vscode.window.showWarningMessage( "ext.jumper.previous is now ext.jumper.focusPrevious. please update your keybindings" );
-        } );
-
-        registerDisposableCommand( "ext.jumper.next", () =>
-        {
-            vscode.window.showWarningMessage( "ext.jumper.next is now ext.jumper.focusNext. please update your keybindings" );
-        } );
+            let disposable = vscode.commands.registerCommand( command, callback, thisArg );
+            context.subscriptions.push( disposable );
+        };
 
         registerDisposableCommand( "ext.jumper.focusPrevious", () =>
         {
@@ -48,6 +38,79 @@ export const jumperCommands = ( () =>
         {
             let nextRange = getNextOrPreviousError( "NEXT" );
             nextRange && moveToPosition( nextRange.start, nextRange.end );
+        } );
+
+        registerDisposableCommand( "ext.jumper.deleteCurrentWord", () =>
+        {
+            let separator = vscode.workspace.getConfiguration().get( "editor.wordSeparators" ) as string;
+
+            let editor = vscode.window.activeTextEditor;
+            let selection = editor.selection;
+            let position = editor.selection.start.character;
+
+            let currentLine = editor.document.lineAt( selection.start.line ).text;
+            let wordStart = position;
+            let wordEnd = position;
+
+            for ( let i = wordStart; i > 0; i-- ) {
+                let c = currentLine[i];
+                if ( `${separator} `.includes( c ) ) {
+                    wordStart = i;
+                    break;
+                }
+            }
+            for ( let i = wordEnd; i < currentLine.length; i++ ) {
+                let c = currentLine[i];
+                if ( `${separator} `.includes( c ) ) {
+                    wordEnd = i;
+                    break;
+                }
+            }
+
+            let range = new vscode.Range(
+                new vscode.Position( selection.start.line, wordStart + 1 ),
+                new vscode.Position( selection.start.line, wordEnd )
+            );
+
+            editor.edit( ( TextEditorEdit ) => {
+                TextEditorEdit.replace( range, "" );
+            } );
+
+            console.log( position );
+        } );
+
+        registerDisposableCommand( "ext.jumper.focusNextWordInLine", () =>
+        {
+            let indexes = getCurrentLineWordIndexes();
+            let editor = vscode.window.activeTextEditor;
+            let currLineNum = editor.selection.active.line;
+            // let currentLine = editor.document.lineAt( currLineNum );
+            let nextWords = indexes.filter( e => e.iWordStart > editor.selection.active.character );
+
+            if ( nextWords[0] )
+            {
+                editor.selection = new vscode.Selection(
+                    new vscode.Position( currLineNum, nextWords[0].iWordStart ),
+                    new vscode.Position( currLineNum, nextWords[0].iWordEnd )
+                );
+            }
+        } );
+
+        registerDisposableCommand( "ext.jumper.focusPreviousWordInLine", () =>
+        {
+            let indexes = getCurrentLineWordIndexes();
+            let editor = vscode.window.activeTextEditor;
+            let currLineNum = editor.selection.active.line;
+            // let currentLine = editor.document.lineAt( currLineNum );
+            let nextWords = indexes.filter( e => e.iWordStart <= editor.selection.active.character ).reverse().slice( 1 );
+
+            if ( nextWords[0] )
+            {
+                editor.selection = new vscode.Selection(
+                    new vscode.Position( currLineNum, nextWords[0].iWordStart ),
+                    new vscode.Position( currLineNum, nextWords[0].iWordEnd )
+                );
+            }
         } );
     }
 
@@ -95,6 +158,7 @@ function getNextOrPreviousError( dir: direction ) : vscode.Range | undefined
 
     if ( editor && errorRanges.length )
     {
+
         let currentLinePos: vscode.Position = editor.selection.active;
 
         if ( dir === "NEXT" )
@@ -124,6 +188,41 @@ function getNextOrPreviousError( dir: direction ) : vscode.Range | undefined
     }
 
     return undefined;
+}
+
+function getCurrentLineWordIndexes() : { iWordStart: number, iWordEnd: number}[] {
+
+    let editor = vscode.window.activeTextEditor;
+    let currLineNum = editor.selection.active.line;
+    let currentLine = vscode.window.activeTextEditor.document.lineAt( currLineNum );
+    let s = currentLine.text.slice( currentLine.firstNonWhitespaceCharacterIndex );
+
+    let indexes: { iWordStart: number, iWordEnd: number}[] = [];
+
+    let letters = s.split( "" );
+
+    let index = -1;
+    let cpt = 0;
+    for ( let i = 0; i < letters.length; i++ ) {
+        let letter = letters[i];
+        if ( /[a-zA-Z0-9$]/.test( letter ) ) {
+            if ( index === -1 ) {
+                index = i;
+            }
+            cpt++;
+        } else {
+            if ( cpt !== 0 ) {
+                indexes.push( { iWordStart: index, iWordEnd: index + cpt } );
+                index = -1;
+                cpt = 0;
+            }
+        }
+    }
+
+    return indexes.map( e => ( {
+        iWordStart: e.iWordStart + currentLine.firstNonWhitespaceCharacterIndex,
+        iWordEnd: e.iWordEnd + currentLine.firstNonWhitespaceCharacterIndex } )
+    );
 }
 
 function moveToStartOfTextLine( line: vscode.TextLine ) : void
