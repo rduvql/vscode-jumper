@@ -2,7 +2,7 @@
     "name": "vscode-jumper",
     "displayName": "jumper",
     "description": "jumper extension for vscode",
-    "version": "1.1.2",
+    "version": "1.2.0",
     "license": "MIT",
     "icon": "images/icon.png",
     "publisher": "rduvql",
@@ -35,11 +35,11 @@
         "commands": [
             {
                 "command": "ext.jumper.focusPrevious",
-                "title": "jumper: focus previous"
+                "title": "jumper: focus previous line"
             },
             {
                 "command": "ext.jumper.focusNext",
-                "title": "jumper: focus next"
+                "title": "jumper: focus next line"
             },
             {
                 "command": "ext.jumper.focusPreviousError",
@@ -48,10 +48,6 @@
             {
                 "command": "ext.jumper.focusNextError",
                 "title": "jumper: focus next error"
-            },
-            {
-                "command": "ext.jumper.deleteCurrentWord",
-                "title": "delete word under cursor"
             },
             {
                 "command": "ext.jumper.focusNextWordInLine",

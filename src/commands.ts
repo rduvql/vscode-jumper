@@ -1,6 +1,9 @@
 import * as vscode from "vscode";
 
-type direction = "NEXT" | "PREV";
+interface Range {
+    start?: number;
+    end?: number;
+}
 
 export const jumperCommands = ( () =>
 {
@@ -10,107 +13,47 @@ export const jumperCommands = ( () =>
     {
         context = ctx;
 
-        const registerDisposableCommand = ( command: string, callback: ( ...args: any[] ) => any, thisArg?: any ) =>
-        {
+        const registerDisposableCommand = ( command: string, callback: ( ...args: any[] ) => any, thisArg?: any ) => {
             let disposable = vscode.commands.registerCommand( command, callback, thisArg );
             context.subscriptions.push( disposable );
         };
 
         registerDisposableCommand( "ext.jumper.focusPrevious", () =>
         {
-            let line = getNextOrPreviousLine( "PREV" );
-            line && moveToStartOfTextLine( line );
+            let prevNext = getNextAndPreviousLine(/^[a-zA-Z0-9]{2,}/);
+            prevNext = prevNext.previous ? prevNext : getNextAndPreviousLine(/^.*[a-zA-Z0-9]{2,}.*/);
+            prevNext.previous && moveToStartOfTextLine( prevNext.previous );
         } );
 
         registerDisposableCommand( "ext.jumper.focusNext", () =>
         {
-            let line = getNextOrPreviousLine( "NEXT" );
-            line && moveToStartOfTextLine( line );
+            let prevNext = getNextAndPreviousLine(/^[a-zA-Z0-9]{2,}/);
+            prevNext = prevNext.next ? prevNext : getNextAndPreviousLine(/^.*[a-zA-Z0-9]{2,}.*/);
+            prevNext.next && moveToStartOfTextLine( prevNext.next );
         } );
 
         registerDisposableCommand( "ext.jumper.focusPreviousError", () =>
         {
-            let previousRange = getNextOrPreviousError( "PREV" );
-            previousRange && moveToPosition( previousRange.start, previousRange.end );
+            let prevNext = getNextAndPreviousError();
+            prevNext.previous && moveToPosition( prevNext.previous.start, prevNext.previous.end );
         } );
 
         registerDisposableCommand( "ext.jumper.focusNextError", () =>
         {
-            let nextRange = getNextOrPreviousError( "NEXT" );
-            nextRange && moveToPosition( nextRange.start, nextRange.end );
-        } );
-
-        registerDisposableCommand( "ext.jumper.deleteCurrentWord", () =>
-        {
-            let separator = vscode.workspace.getConfiguration().get( "editor.wordSeparators" ) as string;
-
-            let editor = vscode.window.activeTextEditor;
-            let selection = editor.selection;
-            let position = editor.selection.start.character;
-
-            let currentLine = editor.document.lineAt( selection.start.line ).text;
-            let wordStart = position;
-            let wordEnd = position;
-
-            for ( let i = wordStart; i > 0; i-- ) {
-                let c = currentLine[i];
-                if ( `${separator} `.includes( c ) ) {
-                    wordStart = i;
-                    break;
-                }
-            }
-            for ( let i = wordEnd; i < currentLine.length; i++ ) {
-                let c = currentLine[i];
-                if ( `${separator} `.includes( c ) ) {
-                    wordEnd = i;
-                    break;
-                }
-            }
-
-            let range = new vscode.Range(
-                new vscode.Position( selection.start.line, wordStart + 1 ),
-                new vscode.Position( selection.start.line, wordEnd )
-            );
-
-            editor.edit( ( TextEditorEdit ) => {
-                TextEditorEdit.replace( range, "" );
-            } );
-
-            console.log( position );
+            let prevNext = getNextAndPreviousError();
+            prevNext.next && moveToPosition( prevNext.next.start, prevNext.next.end );
         } );
 
         registerDisposableCommand( "ext.jumper.focusNextWordInLine", () =>
         {
-            let indexes = getCurrentLineWordIndexes();
-            let editor = vscode.window.activeTextEditor;
-            let currLineNum = editor.selection.active.line;
-            // let currentLine = editor.document.lineAt( currLineNum );
-            let nextWords = indexes.filter( e => e.iWordStart > editor.selection.active.character );
-
-            if ( nextWords[0] )
-            {
-                editor.selection = new vscode.Selection(
-                    new vscode.Position( currLineNum, nextWords[0].iWordStart ),
-                    new vscode.Position( currLineNum, nextWords[0].iWordEnd )
-                );
-            }
+            let selection = getNextAndPreviousWordRange();
+            selection.next && moveToLine( selection.line, selection.next.start, selection.line, selection.next.end );
         } );
 
         registerDisposableCommand( "ext.jumper.focusPreviousWordInLine", () =>
         {
-            let indexes = getCurrentLineWordIndexes();
-            let editor = vscode.window.activeTextEditor;
-            let currLineNum = editor.selection.active.line;
-            // let currentLine = editor.document.lineAt( currLineNum );
-            let nextWords = indexes.filter( e => e.iWordStart <= editor.selection.active.character ).reverse().slice( 1 );
-
-            if ( nextWords[0] )
-            {
-                editor.selection = new vscode.Selection(
-                    new vscode.Position( currLineNum, nextWords[0].iWordStart ),
-                    new vscode.Position( currLineNum, nextWords[0].iWordEnd )
-                );
-            }
+            let selection = getNextAndPreviousWordRange();
+            selection.previous && moveToLine( selection.line, selection.previous.start, selection.line, selection.previous.end );
         } );
     }
 
@@ -119,34 +62,45 @@ export const jumperCommands = ( () =>
     };
 } )();
 
-
-function getNextOrPreviousLine( dir: direction ) : vscode.TextLine | undefined
+function getNextAndPreviousLine(regexp: RegExp) : { previous?: vscode.TextLine, next?: vscode.TextLine }
 {
-    const editor = vscode.window.activeTextEditor;
+    let editor = vscode.window.activeTextEditor;
+
+    let previous: vscode.TextLine;
+    let next: vscode.TextLine;
 
     if ( editor )
     {
         let currLine = editor.selection.active.line;
-        let isNext = dir === "NEXT";
 
-        // dynamic for-loop that change direction based on 'isNext':
-        // isNext === true => loop forward, else loop backward
-        // kind of ugly but nice at the same time
-        for ( let i = ( isNext ? currLine + 1 : currLine - 1 ); isNext ? i < editor.document.lineCount : i >= 0; isNext ? i++ : i-- )
+        for ( let i = currLine - 1 ; i >= 0; i-- )
         {
             let line = editor.document.lineAt( i );
-
-            if ( !line.isEmptyOrWhitespace && /^[a-zA-Z]{2,}/.test( line.text.trim() ) )
+            if ( !line.isEmptyOrWhitespace && regexp.test( line.text.trim() ) )
             {
-                return line;
+                previous = line;
+                break;
+            }
+        }
+
+        for ( let i = currLine + 1; i < editor.document.lineCount; i++ )
+        {
+            let line = editor.document.lineAt( i );
+            if ( !line.isEmptyOrWhitespace && regexp.test( line.text.trim() ) )
+            {
+                next = line;
+                break;
             }
         }
     }
 
-    return undefined;
+    return {
+        previous: previous,
+        next: next
+    };
 }
 
-function getNextOrPreviousError( dir: direction ) : vscode.Range | undefined
+function getNextAndPreviousError( ) : { previous?: vscode.Range, next?: vscode.Range }
 {
     let editor = vscode.window.activeTextEditor;
 
@@ -154,52 +108,70 @@ function getNextOrPreviousError( dir: direction ) : vscode.Range | undefined
         .filter( uriDiag => editor && uriDiag[0].path === editor.document.uri.path )[0][1]
         // [0] => get first of array => current file
         // [1] => get diagnostics ([0] is uri)
+        .filter( diag => [vscode.DiagnosticSeverity.Error, vscode.DiagnosticSeverity.Warning].includes( diag.severity ) )
         .map( diag => diag.range );
+
+    let previous: vscode.Range;
+    let next: vscode.Range;
 
     if ( editor && errorRanges.length )
     {
-
         let currentLinePos: vscode.Position = editor.selection.active;
 
-        if ( dir === "NEXT" )
+        errorRanges = errorRanges.sort( ( d1, d2 ) => d1.start.isBefore( d2.start ) ? -1 : 1 );
+        for ( let i = 0; i < errorRanges.length; i++ )
         {
-            errorRanges = errorRanges.sort( ( d1, d2 ) => d1.start.isBefore( d2.start ) ? -1 : 1 );
-
-            for ( let i = 0; i < errorRanges.length; i++ )
+            if ( errorRanges[i].start.isAfter( currentLinePos ) )
             {
-                if ( errorRanges[i].start.isAfter( currentLinePos ) )
-                {
-                    return errorRanges[i];
-                }
+                next = errorRanges[i];
+                break;
             }
         }
-        if ( dir === "PREV" )
-        {
-            errorRanges = errorRanges.sort( ( d1, d2 ) => d1.start.isBefore( d2.start ) ? 1 : - 1 );
 
-            for ( let i = 0; i < errorRanges.length; i++ )
+        errorRanges = errorRanges.sort( ( d1, d2 ) => d1.start.isBefore( d2.start ) ? 1 : - 1 );
+        for ( let i = 0; i < errorRanges.length; i++ )
+        {
+            if ( errorRanges[i].end.isBefore( currentLinePos ) )
             {
-                if ( errorRanges[i].end.isBefore( currentLinePos ) )
-                {
-                    return errorRanges[i];
-                }
+                previous = errorRanges[i];
+                break;
             }
         }
     }
 
-    return undefined;
+    return {
+        previous: previous,
+        next: next
+    };
 }
 
-function getCurrentLineWordIndexes() : { iWordStart: number, iWordEnd: number}[] {
-
+function getNextAndPreviousWordRange() : { line: number, previous?: Range, next?: Range}
+{
     let editor = vscode.window.activeTextEditor;
     let currLineNum = editor.selection.active.line;
-    let currentLine = vscode.window.activeTextEditor.document.lineAt( currLineNum );
-    let s = currentLine.text.slice( currentLine.firstNonWhitespaceCharacterIndex );
+    let currentLine = editor.document.lineAt( currLineNum );
 
-    let indexes: { iWordStart: number, iWordEnd: number}[] = [];
+    let indexes = getWordsRanges( currentLine.text.substring( currentLine.firstNonWhitespaceCharacterIndex ) );
+    indexes = indexes.map( e => ( {
+        start: e.start + currentLine.firstNonWhitespaceCharacterIndex,
+        end: e.end + currentLine.firstNonWhitespaceCharacterIndex } )
+    );
 
-    let letters = s.split( "" );
+    let previousWords = indexes.filter( e => e.start <= editor.selection.active.character ).reverse().slice( 1 );
+    let nextWords = indexes.filter( e => e.start > editor.selection.active.character );
+
+    return {
+        line: currLineNum,
+        previous: previousWords[0],
+        next: nextWords[0]
+    };
+}
+
+function getWordsRanges( textLine: string ) : Range[]
+{
+    let indexes: Range[] = [];
+
+    let letters = textLine.split( "" );
 
     let index = -1;
     let cpt = 0;
@@ -212,17 +184,14 @@ function getCurrentLineWordIndexes() : { iWordStart: number, iWordEnd: number}[]
             cpt++;
         } else {
             if ( cpt !== 0 ) {
-                indexes.push( { iWordStart: index, iWordEnd: index + cpt } );
+                indexes.push( { start: index, end: index + cpt } );
                 index = -1;
                 cpt = 0;
             }
         }
     }
 
-    return indexes.map( e => ( {
-        iWordStart: e.iWordStart + currentLine.firstNonWhitespaceCharacterIndex,
-        iWordEnd: e.iWordEnd + currentLine.firstNonWhitespaceCharacterIndex } )
-    );
+    return indexes;
 }
 
 function moveToStartOfTextLine( line: vscode.TextLine ) : void
