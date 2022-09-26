@@ -20,15 +20,15 @@ export const jumperCommands = ( () =>
 
         registerDisposableCommand( "ext.jumper.focusPrevious", () =>
         {
-            let prevNext = getNextAndPreviousLine(/^[a-zA-Z0-9]{2,}/);
-            prevNext = prevNext.previous ? prevNext : getNextAndPreviousLine(/^.*[a-zA-Z0-9]{2,}.*/);
+            let prevNext = getNextAndPreviousLine( /^[a-zA-Z0-9]{2,}/ );
+            prevNext = prevNext.previous ? prevNext : getNextAndPreviousLine( /^.*[a-zA-Z0-9]{2,}.*/ );
             prevNext.previous && moveToStartOfTextLine( prevNext.previous );
         } );
 
         registerDisposableCommand( "ext.jumper.focusNext", () =>
         {
-            let prevNext = getNextAndPreviousLine(/^[a-zA-Z0-9]{2,}/);
-            prevNext = prevNext.next ? prevNext : getNextAndPreviousLine(/^.*[a-zA-Z0-9]{2,}.*/);
+            let prevNext = getNextAndPreviousLine( /^[a-zA-Z0-9]{2,}/ );
+            prevNext = prevNext.next ? prevNext : getNextAndPreviousLine( /^.*[a-zA-Z0-9]{2,}.*/ );
             prevNext.next && moveToStartOfTextLine( prevNext.next );
         } );
 
@@ -62,7 +62,7 @@ export const jumperCommands = ( () =>
     };
 } )();
 
-function getNextAndPreviousLine(regexp: RegExp) : { previous?: vscode.TextLine, next?: vscode.TextLine }
+function getNextAndPreviousLine( regexp: RegExp ) : { previous?: vscode.TextLine, next?: vscode.TextLine }
 {
     let editor = vscode.window.activeTextEditor;
 
@@ -105,7 +105,7 @@ function getNextAndPreviousError( ) : { previous?: vscode.Range, next?: vscode.R
     let editor = vscode.window.activeTextEditor;
 
     let errorRanges: vscode.Range[] = vscode.languages.getDiagnostics()
-        .filter( uriDiag => editor && uriDiag[0].path === editor.document.uri.path )[0][1]
+        .filter( uriDiag => editor && uriDiag[0].path.toLowerCase() === editor.document.uri.path.toLowerCase() )[0][1]
         // [0] => get first of array => current file
         // [1] => get diagnostics ([0] is uri)
         .filter( diag => [vscode.DiagnosticSeverity.Error, vscode.DiagnosticSeverity.Warning].includes( diag.severity ) )
